@@ -1,0 +1,9 @@
+solace-agent-mesh~=0.2.2
+numpy
+pandas
+SpeechRecognition
+pyttsx3
+requests
+scikit-learn
+
+git+https://github.com/SolaceLabs/solace-agent-mesh-core-plugins#subdirectory=sam-mongodb
