@@ -1,13 +1,14 @@
 import time
 
-from solace.messaging.messaging_service import MessagingService
+from solace.messaging.messaging_service import MessagingService, RetryStrategy
 from solace.messaging.config.solace_properties import transport_layer_properties, service_properties, authentication_properties
 from solace.messaging.publisher.persistent_message_publisher import PersistentMessagePublisher
 from solace.messaging.receiver.inbound_message import InboundMessage
 from solace.messaging.receiver.persistent_message_receiver import PersistentMessageReceiver
+from solace.messaging.config.transport_security_strategy import TLS
 from solace.messaging.resources.topic import Topic
 from solace.messaging.resources.queue import Queue
-from config import SOLACE_CONFIG, INPUT_QUEUE_NAME, OUTPUT_TOPIC_NAME
+from config import SOLACE_CONFIG, INPUT_QUEUE_NAME, OUTPUT_TOPIC_NAME, NOTIFICATION_TOPIC_NAME, TRUSTSTORE_FILEPATH
 from collections import defaultdict
 from solace.messaging.receiver.message_receiver import MessageHandler
 import json
@@ -30,7 +31,8 @@ class FraudDetectorHandler(MessageHandler):
         self._message_received_on_topics = defaultdict(int)
         self._model = IsolationForest(contamination=0.1)
         self._model.fit(np.array([[1000, 1], [1200, 1], [950, 2], [1300, 3], [2000, 4], [5000, 5], [3500,6], [7000, 7]]))
-
+        self.topic_checked = Topic.of(OUTPUT_TOPIC_NAME)
+        self.topic_fraud_detected = Topic.of(NOTIFICATION_TOPIC_NAME)
 
     @property
     def total_message_received_count(self):
@@ -71,16 +73,14 @@ class FraudDetectorHandler(MessageHandler):
             if isinstance(payload, bytearray):
                 print(f"Received a message of type: {type(payload)}. Decoding to string")
                 payload = payload.decode("utf-8")
-            topic = Topic.of(OUTPUT_TOPIC_NAME)
             data = json.loads(payload)
-            transaction_data = np.array([[data["amount"], data["location_id"]]])
+            transaction_id = data["transactionNum"]
+            transaction_data = np.array([[data["amount"], data["accountNum"]]])
             # Predict Fraud
             prediction = self._model.predict(transaction_data)
+            fraud_detected = True if prediction == -1 else False
             data["checked"] = True
-            if prediction == -1:
-                data["fraudulous"] = True
-            else:
-                data["fraudulous"] = False
+            data["fraudulous"] = fraud_detected
             print(f'Payload = {payload}')
             message_from_topic = message.get_destination_name()
             self._message_received_on_topics[message_from_topic] += 1
@@ -94,23 +94,33 @@ class FraudDetectorHandler(MessageHandler):
             if self._test_callback:
                 self._test_callback(self, message)
             if self._publisher:
-                print(f"Sending payload {data} to topic {topic}")
-                self._publisher.publish(json.dumps(data).encode("utf-8"), topic)
+                print(f"Publishing transaction {transaction_id}  to Mongo")
+                self._publisher.publish(json.dumps(data).encode("utf-8"), self.topic_checked)
+                if fraud_detected:
+                    print(f"Suspicious transaction {transaction_id}")
+                    self._publisher.publish(json.dumps(data).encode("utf-8"), self.topic_fraud_detected)
         except Exception as unexpected_error:
             self._exception += str(unexpected_error)
 
+print(f"Running the fraud detector with broker-config {SOLACE_CONFIG}")
 # Create the messaging service
-service = MessagingService.builder().from_properties({
+transport_security_strategy = TLS.create().with_certificate_validation(True, False, trust_store_file_path=f"{TRUSTSTORE_FILEPATH}")
+
+service = (MessagingService.builder().from_properties({
     transport_layer_properties.HOST: SOLACE_CONFIG["host"],
     service_properties.VPN_NAME: SOLACE_CONFIG["vpn"],
     authentication_properties.SCHEME_BASIC_USER_NAME: SOLACE_CONFIG["username"],
     authentication_properties.SCHEME_BASIC_PASSWORD: SOLACE_CONFIG["password"]
-}).build()
+    })
+    .with_reconnection_retry_strategy(RetryStrategy.parametrized_retry(20,3))
+    .with_transport_security_strategy(transport_security_strategy)
+    .build()
+)
 
 service.connect()
 print("Connected to Solace.")
 
-# Create a direct message publisher
+# Create a persistent message publisher
 publisher = service.create_persistent_message_publisher_builder().build()
 publisher.start()
 

@@ -16,7 +16,7 @@ SOLACE_AGENT_MESH_NAMESPACE=team-25/
 SOLACE_DEV_MODE=False
 SOLACE_BROKER_URL=wss://mr-connection-[serviceId].messaging.solace.cloud:443
 SOLACE_BROKER_SMF_URL=tcps://mr-connection-[serviceId].messaging.solace.cloud:55443
-SOLACE_BROKER_VPN=demothonteam25
+SOLACE_BROKER_VPN=[message-vpn-name]
 SOLACE_BROKER_USERNAME=solace-cloud-client
 SOLACE_BROKER_PASSWORD=[password]
 LLM_SERVICE_API_KEY=[llm api key]
@@ -75,6 +75,7 @@ make sure to adjust the serviceId of your broker and the credentials, also provi
 
 When this is done execute the following command to run the agent mesh:
 ```shell
+source .env
 solace-agent-mesh run -b
 ```
 
@@ -102,6 +103,7 @@ You can use Mongo Compass pointing to your mongodb to check if data is coming in
 This should be converted to some kind of custom agent or custom gateway
 cd into the fraud detection folder and start:
 ```shell
+source .env
 cd fraud-detector
 python3 fraud_detector.py
 ```
@@ -114,6 +116,7 @@ With the speach module you can ask questions to the agent mesh about details in 
 Open another terminal
 
 ```shell
+source .env
 cd speach
 python3 speach.py
 ```

@@ -1,0 +1,4 @@
+requests
+scikit-learn
+solace-pubsubplus
+python-dotenv

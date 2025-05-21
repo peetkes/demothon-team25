@@ -4,11 +4,13 @@ from dotenv import load_dotenv
 load_dotenv()  # Load from .env file
 
 SOLACE_CONFIG = {
-    "host": os.getenv("SOLACE_BROKER_SMF_URL","tcp://localhost:55554"),
-    "vpn": os.getenv("SOLACE_BROKER_VPN", "default"),
-    "username": os.getenv("SOLACE_BROKER_USERNAME", "default"),
-    "password": os.getenv("SOLACE_BROKER_PASSWORD", "default"),
+    "host": os.getenv("SOLACE_BROKER_SMF_URL"),
+    "vpn": os.getenv("SOLACE_BROKER_VPN"),
+    "username": os.getenv("SOLACE_BROKER_USERNAME"),
+    "password": os.getenv("SOLACE_BROKER_PASSWORD"),
 }
 
-INPUT_QUEUE_NAME = os.getenv("INPUT_QUEUE_NAME", "financeQueue")
-OUTPUT_TOPIC_NAME = os.getenv("OUTPUT_TOPIC_NAME", "transaction/checked")
+TRUSTSTORE_FILEPATH = os.getenv("TRUSTSTORE_FILEPATH")
+INPUT_QUEUE_NAME = os.getenv("INPUT_QUEUE_NAME", "checkQueue")
+OUTPUT_TOPIC_NAME = os.getenv("OUTPUT_TOPIC_NAME")
+NOTIFICATION_TOPIC_NAME = os.getenv("NOTIFICATION_TOPIC_NAME")
