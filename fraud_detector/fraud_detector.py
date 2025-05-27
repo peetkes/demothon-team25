@@ -70,7 +70,8 @@ class FraudDetectorHandler(MessageHandler):
         try:
             print('>>>>>>>>>>>>>>>>>>>>>>>>>INCOMING MESSAGE<<<<<<<<<<<<<<<<<<<')
             payload = message.get_payload_as_string() if message.get_payload_as_string() is not None else message.get_payload_as_bytes()
-            if isinstance(payload, bytearray):
+            payload_as_bytearray = True if isinstance(payload, bytearray) else False
+            if payload_as_bytearray:
                 print(f"Received a message of type: {type(payload)}. Decoding to string")
                 payload = payload.decode("utf-8")
             data = json.loads(payload)
@@ -95,11 +96,13 @@ class FraudDetectorHandler(MessageHandler):
                 self._test_callback(self, message)
             if self._publisher:
                 print(f"Publishing transaction {transaction_id}  to Mongo")
-                self._publisher.publish(json.dumps(data).encode("utf-8"), self.topic_checked)
+                pub_message = bytearray(json.dumps(data).encode("utf-8")) if payload_as_bytearray else json.dumps(data).encode("utf-8")
+                self._publisher.publish(pub_message, self.topic_checked)
                 if fraud_detected:
                     print(f"Suspicious transaction {transaction_id}")
-                    self._publisher.publish(json.dumps(data).encode("utf-8"), self.topic_fraud_detected)
+                    self._publisher.publish(pub_message, self.topic_fraud_detected)
         except Exception as unexpected_error:
+            print(f"EXCEPTION {transaction_id} ERROR: {str(unexpected_error)}")
             self._exception += str(unexpected_error)
 
 print(f"Running the fraud detector with broker-config {SOLACE_CONFIG}")
@@ -125,7 +128,7 @@ publisher = service.create_persistent_message_publisher_builder().build()
 publisher.start()
 
 # Define queue receiver
-queue = Queue.durable_non_exclusive_queue(INPUT_QUEUE_NAME)
+queue = Queue.durable_exclusive_queue(INPUT_QUEUE_NAME)
 receiver = service.create_persistent_message_receiver_builder().with_message_auto_acknowledgement().build(queue)
 receiver.start()
 

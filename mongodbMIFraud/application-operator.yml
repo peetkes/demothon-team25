@@ -147,8 +147,8 @@ management:
 logging:  # Logging configuration. For more info: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.logging
   level:
     root: info
-    com.solace.connector.mongodb: WARN # Enables logs for connector
-    com.solace.connector.core: WARN # Enables logs for connector framework
+    com.solace.connector.mongodb: info # Enables logs for connector
+    com.solace.connector.core: info # Enables logs for connector framework
     com.solace.spring.cloud.stream.binder: WARN # Enables logs for Solace and JMS binders
   file:
     name: myapp.log  # base log file name. Example: Generates a log file to a file named myapp.log.

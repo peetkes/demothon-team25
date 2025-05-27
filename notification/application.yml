@@ -2,29 +2,23 @@ spring:
   application:
     name: sink-notification-service
   mail:
-    host: smtp.sina.com
-    port: 587
-    username: faddy_wang
-    password: 860c17a7fa8f2a33
-#    password: izzfbpmfltlobiga   #qq
+    host: ${MAIL_SERVER_HOST}
+    port: ${MAIL_SERVER_PORT}
+    username: ${MAIL_SERVER_USER}
+    password: ${MAIL_SERVER_PASSWORD}
 solace:
-  #  java:
-  #    host: tcp://81.70.183.16:55555
-  #    msg-vpn: default
-  #    clientUsername: admin
-  #    clientPassword: admin
-  #    queue: passenger
   java:
-    host: tcps://mr-connection-zyow537rbw3.messaging.solace.cloud:55443
-    msg-vpn: demothonteam25
-    clientUsername: notification-user
-    clientPassword: notification-user
-    queue: notificationQueue
+    host: ${SOLACE_BROKER_SMF_URL:tcp://localhost:55554}
+    msg-vpn: ${SOLACE_BROKER_VPN:default}
+    clientUsername: ${SOLACE_BROKER_USERNAME:admin}
+    clientPassword: ${SOLACE_BROKER_PASSWORD:secret}
+    queue: ${SOLACE_QUEUE}
 
 notification:
-  mailFrom: faddy_wang@sina.com
-  mailTo: peetkes@gmail.com
-  mailSubject: "subject ${payload.address}"
-  mailBodyNode: payload.
+  mailFrom: ${NOTIFICATION_MAIL_FROM}
+  mailTo: ${NOTIFICATION_MAIL_TO}
+  mailSubject: ${NOTIFICATION_MAIL_SUBJECT}
+  mailBodyNode: ${NOTIFICATION_MAIL_BODY_NODE}
+
 server:
   port: 8090

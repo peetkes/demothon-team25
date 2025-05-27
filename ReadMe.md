@@ -8,6 +8,8 @@ source .venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 ```
+Get the proper notification jar file and mongodbMI docker image as tar file  from Faddy Wang.
+Those are too big to store in the repo.
 
 Create a .env file by copying sample.env to .env and adjust the proper fields.
 
@@ -66,9 +68,6 @@ TEAM25_AUTO_DETECT_SCHEMA="true"
 IMAGE_GEN_ENDPOINT=
 IMAGE_GEN_API_KEY=
 IMAGE_GEN_MODEL=
-
-INPUT_QUEUE_NAME = "financeQueue"
-OUTPUT_TOPIC_NAME = "transaction/checked"
 ```
 
 make sure to adjust the serviceId of your broker and the credentials, also provide a proper llm api key.
@@ -85,10 +84,10 @@ This will spin up the agent mesh.
 
 Next step is to setup the broker queues:
 
-Go to the UI of the broker and select the demothonteam25 message VPN.
-Create the queues for the INPUT_TOPIC_QUEUE and the OUTPUT_TOPIC_QUEUE from the .env file:
-Make sure the following subscription is added to the financeQueue: _acmebank/solace/core/>_
-and _acmebank/solace/core/>_ to the checkedQueue
+Go to the UI of the broker and select the proper message VPN.
+Create the queues for both the mongodb-MIs, see the sample.env inside the mongodb-MI folders:
+Make sure the following subscription is added to the queue for the mongodbMI: _acmebank/solace/core/>_
+and _acmebank/solace/core/>_ to the queue of the mongodbMIFraud
 Both queues are owned by solace-cloud-client and are set to _Exclusive_
 
 ## Connect solace feed
@@ -98,26 +97,46 @@ Fill in the proper url vpn username and password and select `Start All`. Let it 
 
 You can use Mongo Compass pointing to your mongodb to check if data is coming in.
 
-## Fraud detection aplication.
-
-This should be converted to some kind of custom agent or custom gateway
-cd into the fraud detection folder and start:
+## MongodbMI 
+Create a .env file in the mongodbMI folder by copying the content of the sample.env file and adjust properties accordingly
+Open another terminal
 ```shell
-source .env
-cd fraud-detector
-python3 fraud_detector.py
+./start-mongodbMI-svc.sh
+```
+
+## MongodbMIFraud
+Create a .env file in the mongodbMIFraud folder by copying the content of the sample.env file and adjust properties accordingly
+Open another terminal
+```shell
+./start-mongodbMIFraud-svc.sh
+```
+
+## Notification Service
+Create a .env file in the notification folder by copying the content of the sample.env file and adjust properties accordingly
+Open another terminal
+```shell
+./start-notification-svc.sh
+```
+
+## Fraud Detection Service.
+This should be converted to some kind of custom agent or custom gateway
+
+Create a .env file in the fraud_detector folder by copying the content of the sample.env file and adjust properties accordingly
+Open another terminal
+```shell
+./start-fraud-detection-svc.sh
 ```
 
 This will tap into the financeQueue and predict possible fraudulous transactions and publish those to the checkedQueue.
 
-## Query database
+## Speech Service
 
-With the speach module you can ask questions to the agent mesh about details in the mongo db.
-Open another terminal
-
+With the speech module you can ask questions to the agent mesh about details in the mongo db.
+Create a .env file in the fraud_detector folder by copying the content of the sample.env file and adjust properties accordingly
+Open another terminal and follow instructions
 ```shell
-source .env
-cd speech
-python3 speech.py
+./start-speech-svc.sh
 ```
-The reading of the answer has to be implemented.
+
+## TODO
+Add broker init script
